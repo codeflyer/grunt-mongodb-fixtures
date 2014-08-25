@@ -9,25 +9,24 @@
 'use strict';
 var fixtures = require('pow-mongodb-fixtures');
 var path = require('path');
+var async = require('async');
 module.exports = function(grunt) {
-  grunt.registerMultiTask('mongodb_fixtures', 'Load mongodb fixtures for development', function() {
-    var done = this.async();
-    var mongoFixtures = fixtures.connect(this.options().connection);
-    var i = this.filesSrc.length;
-    this.filesSrc.forEach(function(fixturePath) {
-      var fixturePath = path.resolve(fixturePath);
-      mongoFixtures.clearAllAndLoad(fixturePath, function(err) {
-        if (err) {
-          console.error(err);
-        }
-        else {
-          console.log("File", fixturePath, "successfully loaded.")
-        }
-        i -= 1;
-        if (i == 0) {
-          done();
-        }
-      })
+    grunt.registerMultiTask('mongodb_fixtures', 'Load mongodb fixtures for development', function() {
+        var done = this.async();
+        var mongoFixtures = fixtures.connect(this.options().connection);
+        async.eachSeries(this.filesSrc,
+            function(fixturePath, next) {
+                var fixturePath = path.resolve(fixturePath);
+                mongoFixtures.clearAllAndLoad(fixturePath, function(err) {
+                    next();
+                })
+            },
+            function(err) {
+                if(err) {
+                    console.error(err);
+                }
+                done();
+            }
+        )
     });
-  });
 };
